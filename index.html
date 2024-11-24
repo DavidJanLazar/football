@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Football Kit</title>
+    <title>Interactive Football Kit Flip</title>
     <style>
         body {
             margin: 0;
@@ -14,6 +14,7 @@
             height: 100vh;
             background: linear-gradient(to bottom, #0052cc, #00c6ff);
             color: white;
+            overflow: hidden;
         }
 
         .flip-container {
@@ -27,13 +28,7 @@
             width: 100%;
             height: 100%;
             position: absolute;
-            transition: transform 0.8s ease-in-out;
             transform-style: preserve-3d;
-            cursor: pointer;
-        }
-
-        .flipped {
-            transform: rotateY(180deg);
         }
 
         .flip-card .front, .flip-card .back {
@@ -67,35 +62,69 @@
     </div>
 
     <script>
-        // Flip functionality
         const flipCard = document.getElementById('flipCard');
-        let isFlipped = false;
+        let rotationY = 0; // Current rotation angle in degrees
+        let isDragging = false;
+        let startX = 0; // Starting X position of drag/touch
 
-        // Add click for desktop and tap for mobile
-        flipCard.addEventListener('click', () => {
-            isFlipped = !isFlipped;
-            flipCard.classList.toggle('flipped', isFlipped);
-        });
+        // Mouse and Touch Events
+        function onMouseDown(event) {
+            isDragging = true;
+            startX = event.clientX || event.touches[0].clientX;
+        }
 
-        // Swipe functionality for mobile
-        let startX = 0;
+        function onMouseMove(event) {
+            if (!isDragging) return;
 
-        flipCard.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-        });
+            // Get current X position
+            const currentX = event.clientX || event.touches[0].clientX;
 
-        flipCard.addEventListener('touchend', (e) => {
-            const endX = e.changedTouches[0].clientX;
-            if (endX - startX > 50) {
-                // Swipe right
-                isFlipped = false;
-                flipCard.classList.remove('flipped');
-            } else if (startX - endX > 50) {
-                // Swipe left
-                isFlipped = true;
-                flipCard.classList.add('flipped');
+            // Calculate rotation change based on movement
+            const deltaX = currentX - startX;
+
+            // Update rotation (scale the delta for a smoother experience)
+            rotationY += deltaX * 0.3;
+
+            // Clamp rotation to limit over-rotating
+            rotationY = Math.min(Math.max(rotationY, -180), 180);
+
+            // Apply the rotation
+            flipCard.style.transform = `rotateY(${rotationY}deg)`;
+
+            // Update startX for continuous rotation
+            startX = currentX;
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+
+            // Snap to 0 or 180 degrees when dragging ends
+            if (rotationY > -90 && rotationY < 90) {
+                rotationY = 0; // Front
+            } else if (rotationY >= 90) {
+                rotationY = 180; // Back
+            } else {
+                rotationY = -180; // Back (in the opposite direction)
             }
-        });
+
+            // Smooth transition to final position
+            flipCard.style.transition = 'transform 0.3s ease-out';
+            flipCard.style.transform = `rotateY(${rotationY}deg)`;
+
+            // Remove the transition after it's done (for drag responsiveness)
+            setTimeout(() => {
+                flipCard.style.transition = '';
+            }, 300);
+        }
+
+        // Attach event listeners
+        flipCard.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        flipCard.addEventListener('touchstart', onMouseDown);
+        document.addEventListener('touchmove', onMouseMove);
+        document.addEventListener('touchend', onMouseUp);
     </script>
 </body>
 </html>
