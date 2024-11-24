@@ -1,76 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Football Kit Display</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Football Kit Flip</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(to bottom, #0052cc, #00c6ff);
-            color: white;
             margin: 0;
-            padding: 0;
-        }
-        .kit-section {
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin: 20px;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border: 2px solid white;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: white;
-            color: #0052cc;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #00c6ff;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #0052cc, #00c6ff);
             color: white;
+            overflow: hidden;
         }
-        @media (max-width: 768px) {
-            .kit-section {
-                flex-direction: column;
-            }
+
+        .flip-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            perspective: 1000px;
+        }
+
+        .flip-card {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card .front, .flip-card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+        }
+
+        .flip-card .front {
+            background-image: url('front.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .flip-card .back {
+            background-image: url('back.jpg');
+            background-size: cover;
+            background-position: center;
+            transform: rotateY(180deg);
         }
     </style>
 </head>
 <body>
-    <h1>Football Kit Display</h1>
-    <p>Welcome to the interactive football kit showcase! Scan the QR codes or download the images below.</p>
-    
-    <div class="kit-section">
-        <div>
-            <h2>Front</h2>
-            <img src="front.jpg" alt="Front Side">
-        </div>
-        <div>
-            <h2>Back</h2>
-            <img src="back.jpg" alt="Back Side">
+    <h1 style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%);">Interactive Football Kit</h1>
+    <div class="flip-container">
+        <div class="flip-card" id="flipCard">
+            <div class="front"></div>
+            <div class="back"></div>
         </div>
     </div>
-    
-    <div class="kit-section">
-        <div>
-            <h3>Scan for Front</h3>
-            <img src="front_qr.png" alt="QR Code for Front">
-        </div>
-        <div>
-            <h3>Scan for Back</h3>
-            <img src="back_qr.png" alt="QR Code for Back">
-        </div>
-    </div>
-    
-    <div>
-        <a href="front.jpg" download><button>Download Front</button></a>
-        <a href="back.jpg" download><button>Download Back</button></a>
-    </div>
+
+    <script>
+        const flipCard = document.getElementById('flipCard');
+        let rotationY = 0; // Current rotation angle in degrees
+        let isDragging = false;
+        let startX = 0; // Starting X position of drag/touch
+
+        // Mouse and Touch Events
+        function onMouseDown(event) {
+            isDragging = true;
+            startX = event.clientX || event.touches[0].clientX;
+        }
+
+        function onMouseMove(event) {
+            if (!isDragging) return;
+
+            // Get current X position
+            const currentX = event.clientX || event.touches[0].clientX;
+
+            // Calculate rotation change based on movement
+            const deltaX = currentX - startX;
+
+            // Update rotation (scale the delta for a smoother experience)
+            rotationY += deltaX * 0.3;
+
+            // Clamp rotation to limit over-rotating
+            rotationY = Math.min(Math.max(rotationY, -180), 180);
+
+            // Apply the rotation
+            flipCard.style.transform = `rotateY(${rotationY}deg)`;
+
+            // Update startX for continuous rotation
+            startX = currentX;
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+
+            // Snap to 0 or 180 degrees when dragging ends
+            if (rotationY > -90 && rotationY < 90) {
+                rotationY = 0; // Front
+            } else if (rotationY >= 90) {
+                rotationY = 180; // Back
+            } else {
+                rotationY = -180; // Back (in the opposite direction)
+            }
+
+            // Smooth transition to final position
+            flipCard.style.transition = 'transform 0.3s ease-out';
+            flipCard.style.transform = `rotateY(${rotationY}deg)`;
+
+            // Remove the transition after it's done (for drag responsiveness)
+            setTimeout(() => {
+                flipCard.style.transition = '';
+            }, 300);
+        }
+
+        // Attach event listeners
+        flipCard.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        flipCard.addEventListener('touchstart', onMouseDown);
+        document.addEventListener('touchmove', onMouseMove);
+        document.addEventListener('touchend', onMouseUp);
+    </script>
 </body>
 </html>
