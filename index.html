@@ -4,136 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Football Kit</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             background: linear-gradient(to bottom, #0052cc, #00c6ff);
             color: white;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
         }
-        #container {
+
+        .flip-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            perspective: 1000px;
+        }
+
+        .flip-card {
             width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 100%;
+            position: absolute;
+            transition: transform 0.8s ease-in-out;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card .front, .flip-card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+        }
+
+        .flip-card .front {
+            background-image: url('front.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .flip-card .back {
+            background-image: url('back.jpg');
+            background-size: cover;
+            background-position: center;
+            transform: rotateY(180deg);
         }
     </style>
 </head>
 <body>
-    <h1>Interactive Football Kit</h1>
-    <div id="container"></div>
+    <h1 style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%);">Interactive Football Kit</h1>
+    <div class="flip-container">
+        <div class="flip-card" id="flipCard">
+            <div class="front"></div>
+            <div class="back"></div>
+        </div>
+    </div>
 
     <script>
-        // Set up the scene, camera, and renderer
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('container').appendChild(renderer.domElement);
+        // Flip functionality
+        const flipCard = document.getElementById('flipCard');
+        let isFlipped = false;
 
-        // Create a cube with two images (front and back)
-        const geometry = new THREE.BoxGeometry(3, 2, 0.1);
-        const materials = [
-            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Left
-            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Right
-            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Top
-            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Bottom
-            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('front.jpg') }), // Front
-            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('back.jpg') })  // Back
-        ];
-        const cube = new THREE.Mesh(geometry, materials);
-        scene.add(cube);
+        // Add click for desktop and tap for mobile
+        flipCard.addEventListener('click', () => {
+            isFlipped = !isFlipped;
+            flipCard.classList.toggle('flipped', isFlipped);
+        });
 
-        // Position the camera
-        camera.position.z = 5;
+        // Swipe functionality for mobile
+        let startX = 0;
 
-        // Add mouse drag rotation
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
+        flipCard.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        });
 
-        function onMouseDown(event) {
-            isDragging = true;
-        }
-
-        function onMouseUp(event) {
-            isDragging = false;
-        }
-
-        function onMouseMove(event) {
-            if (isDragging) {
-                const deltaMove = {
-                    x: event.clientX - previousMousePosition.x,
-                    y: event.clientY - previousMousePosition.y
-                };
-
-                cube.rotation.y += deltaMove.x * 0.01;
-                cube.rotation.x += deltaMove.y * 0.01;
+        flipCard.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            if (endX - startX > 50) {
+                // Swipe right
+                isFlipped = false;
+                flipCard.classList.remove('flipped');
+            } else if (startX - endX > 50) {
+                // Swipe left
+                isFlipped = true;
+                flipCard.classList.add('flipped');
             }
-
-            previousMousePosition = {
-                x: event.clientX,
-                y: event.clientY
-            };
-        }
-
-        // Add touch drag rotation (for mobile)
-        let touchStartX, touchStartY;
-
-        function onTouchStart(event) {
-            isDragging = true;
-            const touch = event.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-        }
-
-        function onTouchMove(event) {
-            if (isDragging) {
-                const touch = event.touches[0];
-                const deltaMove = {
-                    x: touch.clientX - touchStartX,
-                    y: touch.clientY - touchStartY
-                };
-
-                cube.rotation.y += deltaMove.x * 0.01;
-                cube.rotation.x += deltaMove.y * 0.01;
-
-                touchStartX = touch.clientX;
-                touchStartY = touch.clientY;
-            }
-        }
-
-        function onTouchEnd(event) {
-            isDragging = false;
-        }
-
-        // Add event listeners
-        renderer.domElement.addEventListener('mousedown', onMouseDown);
-        renderer.domElement.addEventListener('mousemove', onMouseMove);
-        renderer.domElement.addEventListener('mouseup', onMouseUp);
-        renderer.domElement.addEventListener('mouseleave', onMouseUp);
-
-        renderer.domElement.addEventListener('touchstart', onTouchStart);
-        renderer.domElement.addEventListener('touchmove', onTouchMove);
-        renderer.domElement.addEventListener('touchend', onTouchEnd);
-
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Adjust to window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
