@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Football Kit Display</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Football Kit</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,67 +13,128 @@
             color: white;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
-        .kit-section {
+        #container {
+            width: 100%;
+            height: 100vh;
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 20px;
-            margin: 20px;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border: 2px solid white;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: white;
-            color: #0052cc;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #00c6ff;
-            color: white;
-        }
-        @media (max-width: 768px) {
-            .kit-section {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
 <body>
-    <h1>Football Kit Display</h1>
-    <p>Welcome to the interactive football kit showcase! Scan the QR codes or download the images below.</p>
-    
-    <div class="kit-section">
-        <div>
-            <h2>Front</h2>
-            <img src="front.jpg" alt="Front Side">
-        </div>
-        <div>
-            <h2>Back</h2>
-            <img src="back.jpg" alt="Back Side">
-        </div>
-    </div>
-    
-    <div class="kit-section">
-        <div>
-            <h3>Scan for Front</h3>
-            <img src="front_qr.png" alt="QR Code for Front">
-        </div>
-        <div>
-            <h3>Scan for Back</h3>
-            <img src="back_qr.png" alt="QR Code for Back">
-        </div>
-    </div>
-    
-    <div>
-        <a href="front.jpg" download><button>Download Front</button></a>
-        <a href="back.jpg" download><button>Download Back</button></a>
-    </div>
+    <h1>Interactive Football Kit</h1>
+    <div id="container"></div>
+
+    <script>
+        // Set up the scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // Create a cube with two images (front and back)
+        const geometry = new THREE.BoxGeometry(3, 2, 0.1);
+        const materials = [
+            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Left
+            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Right
+            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Top
+            new THREE.MeshBasicMaterial({ color: 0x333333 }), // Bottom
+            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('front.jpg') }), // Front
+            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('back.jpg') })  // Back
+        ];
+        const cube = new THREE.Mesh(geometry, materials);
+        scene.add(cube);
+
+        // Position the camera
+        camera.position.z = 5;
+
+        // Add mouse drag rotation
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        function onMouseDown(event) {
+            isDragging = true;
+        }
+
+        function onMouseUp(event) {
+            isDragging = false;
+        }
+
+        function onMouseMove(event) {
+            if (isDragging) {
+                const deltaMove = {
+                    x: event.clientX - previousMousePosition.x,
+                    y: event.clientY - previousMousePosition.y
+                };
+
+                cube.rotation.y += deltaMove.x * 0.01;
+                cube.rotation.x += deltaMove.y * 0.01;
+            }
+
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+
+        // Add touch drag rotation (for mobile)
+        let touchStartX, touchStartY;
+
+        function onTouchStart(event) {
+            isDragging = true;
+            const touch = event.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        }
+
+        function onTouchMove(event) {
+            if (isDragging) {
+                const touch = event.touches[0];
+                const deltaMove = {
+                    x: touch.clientX - touchStartX,
+                    y: touch.clientY - touchStartY
+                };
+
+                cube.rotation.y += deltaMove.x * 0.01;
+                cube.rotation.x += deltaMove.y * 0.01;
+
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+            }
+        }
+
+        function onTouchEnd(event) {
+            isDragging = false;
+        }
+
+        // Add event listeners
+        renderer.domElement.addEventListener('mousedown', onMouseDown);
+        renderer.domElement.addEventListener('mousemove', onMouseMove);
+        renderer.domElement.addEventListener('mouseup', onMouseUp);
+        renderer.domElement.addEventListener('mouseleave', onMouseUp);
+
+        renderer.domElement.addEventListener('touchstart', onTouchStart);
+        renderer.domElement.addEventListener('touchmove', onTouchMove);
+        renderer.domElement.addEventListener('touchend', onTouchEnd);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Adjust to window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
