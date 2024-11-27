@@ -29,6 +29,7 @@
             height: 100%;
             position: absolute;
             transform-style: preserve-3d;
+            transition: transform 0.3s ease-out; /* Smooth transition */
         }
 
         .flip-card .front, .flip-card .back {
@@ -66,55 +67,51 @@
         let rotationY = 0; // Current rotation angle in degrees
         let isDragging = false;
         let startX = 0; // Starting X position of drag/touch
+        let deltaX = 0; // Track drag distance
+        let isFlipping = false; // Prevent multiple flips at once
 
         // Mouse and Touch Events
         function onMouseDown(event) {
+            if (isFlipping) return; // Prevent interaction while flipping
             isDragging = true;
             startX = event.clientX || event.touches[0].clientX;
+            flipCard.style.transition = ''; // Disable smooth snapping during drag
         }
 
         function onMouseMove(event) {
-            if (!isDragging) return;
+            if (!isDragging || isFlipping) return;
 
             // Get current X position
             const currentX = event.clientX || event.touches[0].clientX;
 
-            // Calculate rotation change based on movement
-            const deltaX = currentX - startX;
+            // Calculate drag distance
+            deltaX = currentX - startX;
 
-            // Update rotation (scale the delta for a smoother experience)
-            rotationY += deltaX * 0.3;
-
-            // Clamp rotation to limit over-rotating
-            rotationY = Math.min(Math.max(rotationY, -180), 180);
-
-            // Apply the rotation
-            flipCard.style.transform = `rotateY(${rotationY}deg)`;
-
-            // Update startX for continuous rotation
-            startX = currentX;
+            // Update rotation during drag
+            flipCard.style.transform = `rotateY(${rotationY + deltaX * 0.5}deg)`; // Adjust drag sensitivity
         }
 
         function onMouseUp() {
+            if (!isDragging || isFlipping) return;
             isDragging = false;
 
-            // Snap to 0 or 180 degrees when dragging ends
-            if (rotationY > -90 && rotationY < 90) {
-                rotationY = 0; // Front
-            } else if (rotationY >= 90) {
-                rotationY = 180; // Back
-            } else {
-                rotationY = -180; // Back (in the opposite direction)
+            // Determine flip direction and update rotation
+            if (deltaX > 50) { // Swipe right
+                rotationY += 180;
+            } else if (deltaX < -50) { // Swipe left
+                rotationY -= 180;
             }
 
-            // Smooth transition to final position
+            // Smooth transition to final rotation
+            isFlipping = true;
             flipCard.style.transition = 'transform 0.3s ease-out';
             flipCard.style.transform = `rotateY(${rotationY}deg)`;
 
-            // Remove the transition after it's done (for drag responsiveness)
+            // Reset variables and prevent multiple flips
             setTimeout(() => {
-                flipCard.style.transition = '';
-            }, 300);
+                isFlipping = false;
+                deltaX = 0; // Reset drag distance
+            }, 300); // Match transition duration
         }
 
         // Attach event listeners
